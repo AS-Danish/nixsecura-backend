@@ -33,13 +33,12 @@ class ImageUploadController extends Controller
             $path = $file->storeAs('images', $filename, 'public');
             
             // Return the public URL - ensure it's absolute
-            $url = Storage::disk('public')->url($path);
+            // Storage::url() returns relative path like /storage/images/file.jpg
+            $relativePath = '/storage/' . $path;
             
-            // Make sure URL is absolute (prepend base URL if relative)
-            if (!\Illuminate\Support\Str::startsWith($url, ['http://', 'https://'])) {
-                $baseUrl = config('app.url', 'http://localhost:8000');
-                $url = rtrim($baseUrl, '/') . '/' . ltrim($url, '/');
-            }
+            // Always use the configured APP_URL to ensure correct port
+            $baseUrl = config('app.url', 'http://localhost:8000');
+            $url = rtrim($baseUrl, '/') . $relativePath;
             
             return response()->json([
                 'success' => true,
