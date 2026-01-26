@@ -4,76 +4,150 @@ namespace App\Http\Controllers;
 
 use App\Models\Testimonial;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TestimonialController extends Controller
 {
     public function index()
     {
-        $testimonials = Testimonial::latest()->get();
-        return response()->json($testimonials);
+        try {
+            $testimonials = Testimonial::latest()->get();
+            return response()->json($testimonials->toArray());
+        } catch (\Exception $e) {
+            Log::error('Testimonial index error: ' . $e->getMessage());
+            return response()->json([], 200);
+        }
     }
 
     public function show($id)
     {
-        $testimonial = Testimonial::findOrFail($id);
-        return response()->json($testimonial);
+        try {
+            $testimonial = Testimonial::findOrFail($id);
+            return response()->json($testimonial);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Testimonial not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Testimonial show error: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while fetching testimonial'], 500);
+        }
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'course' => 'nullable|string|max:255',
-            'testimonial' => 'nullable|string',
-            'rating' => 'required|integer|min:1|max:5',
-            'image' => 'nullable|string',
-            'position' => 'nullable|string|max:255',
-            'company' => 'nullable|string|max:255',
-            'is_featured' => 'nullable|boolean',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'course' => 'nullable|string|max:255',
+                'testimonial' => 'nullable|string',
+                'rating' => 'required|integer|min:1|max:5',
+                'image' => 'nullable|string|max:5000',
+                'position' => 'nullable|string|max:255',
+                'company' => 'nullable|string|max:255',
+                'is_featured' => 'nullable|boolean',
+            ]);
 
-        // Ensure boolean is properly cast
-        if (isset($validated['is_featured'])) {
-            $validated['is_featured'] = filter_var($validated['is_featured'], FILTER_VALIDATE_BOOLEAN);
-        } else {
-            $validated['is_featured'] = false;
+            // Sanitize inputs
+            $validated['name'] = strip_tags(trim($validated['name']));
+            if (isset($validated['course'])) {
+                $validated['course'] = strip_tags(trim($validated['course']));
+            }
+            if (isset($validated['testimonial'])) {
+                $validated['testimonial'] = strip_tags(trim($validated['testimonial']));
+            }
+            if (isset($validated['position'])) {
+                $validated['position'] = strip_tags(trim($validated['position']));
+            }
+            if (isset($validated['company'])) {
+                $validated['company'] = strip_tags(trim($validated['company']));
+            }
+
+            // Ensure boolean is properly cast
+            if (isset($validated['is_featured'])) {
+                $validated['is_featured'] = filter_var($validated['is_featured'], FILTER_VALIDATE_BOOLEAN);
+            } else {
+                $validated['is_featured'] = false;
+            }
+
+            $testimonial = Testimonial::create($validated);
+
+            return response()->json($testimonial, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Testimonial store error: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while creating testimonial'], 500);
         }
-
-        $testimonial = Testimonial::create($validated);
-
-        return response()->json($testimonial, 201);
     }
 
     public function update(Request $request, string $id)
     {
-        $testimonial = Testimonial::findOrFail($id);
+        try {
+            $testimonial = Testimonial::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'course' => 'nullable|string|max:255',
-            'testimonial' => 'nullable|string',
-            'rating' => 'sometimes|required|integer|min:1|max:5',
-            'image' => 'nullable|string',
-            'position' => 'nullable|string|max:255',
-            'company' => 'nullable|string|max:255',
-            'is_featured' => 'nullable|boolean',
-        ]);
+            $validated = $request->validate([
+                'name' => 'sometimes|required|string|max:255',
+                'course' => 'nullable|string|max:255',
+                'testimonial' => 'nullable|string',
+                'rating' => 'sometimes|required|integer|min:1|max:5',
+                'image' => 'nullable|string|max:5000',
+                'position' => 'nullable|string|max:255',
+                'company' => 'nullable|string|max:255',
+                'is_featured' => 'nullable|boolean',
+            ]);
 
-        // Ensure boolean is properly cast
-        if (isset($validated['is_featured'])) {
-            $validated['is_featured'] = filter_var($validated['is_featured'], FILTER_VALIDATE_BOOLEAN);
+            // Sanitize inputs
+            if (isset($validated['name'])) {
+                $validated['name'] = strip_tags(trim($validated['name']));
+            }
+            if (isset($validated['course'])) {
+                $validated['course'] = strip_tags(trim($validated['course']));
+            }
+            if (isset($validated['testimonial'])) {
+                $validated['testimonial'] = strip_tags(trim($validated['testimonial']));
+            }
+            if (isset($validated['position'])) {
+                $validated['position'] = strip_tags(trim($validated['position']));
+            }
+            if (isset($validated['company'])) {
+                $validated['company'] = strip_tags(trim($validated['company']));
+            }
+
+            // Ensure boolean is properly cast
+            if (isset($validated['is_featured'])) {
+                $validated['is_featured'] = filter_var($validated['is_featured'], FILTER_VALIDATE_BOOLEAN);
+            }
+
+            $testimonial->update($validated);
+
+            return response()->json($testimonial);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Testimonial not found'], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Testimonial update error: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while updating testimonial'], 500);
         }
-
-        $testimonial->update($validated);
-
-        return response()->json($testimonial);
     }
 
     public function destroy(string $id)
     {
-        $testimonial = Testimonial::findOrFail($id);
-        $testimonial->delete();
+        try {
+            $testimonial = Testimonial::findOrFail($id);
+            $testimonial->delete();
 
-        return response()->json(['message' => 'Testimonial deleted successfully']);
+            return response()->json(['message' => 'Testimonial deleted successfully']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Testimonial not found'], 404);
+        } catch (\Exception $e) {
+            Log::error('Testimonial destroy error: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while deleting testimonial'], 500);
+        }
     }
 }
