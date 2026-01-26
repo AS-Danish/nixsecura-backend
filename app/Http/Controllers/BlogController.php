@@ -26,11 +26,16 @@ class BlogController extends Controller
             'title' => 'required|string|max:255',
             'excerpt' => 'required|string',
             'content' => 'required|string',
-            'image' => 'nullable|string', // Assuming URL for now
-            'category' => 'required|string',
+            'image' => 'nullable|string',
+            'category' => 'required|string|max:255',
             'published_at' => 'nullable|date',
             'tags' => 'nullable|array',
         ]);
+
+        // Ensure tags is an array
+        if (isset($validated['tags']) && !is_array($validated['tags'])) {
+            $validated['tags'] = [];
+        }
 
         $slug = Str::slug($validated['title']);
         $count = Blog::where('slug', $slug)->count();
@@ -66,10 +71,15 @@ class BlogController extends Controller
             'excerpt' => 'sometimes|required|string',
             'content' => 'sometimes|required|string',
             'image' => 'nullable|string',
-            'category' => 'sometimes|required|string',
+            'category' => 'sometimes|required|string|max:255',
             'published_at' => 'nullable|date',
             'tags' => 'nullable|array',
         ]);
+
+        // Ensure tags is an array
+        if (isset($validated['tags']) && !is_array($validated['tags'])) {
+            $validated['tags'] = [];
+        }
 
         if (isset($validated['title'])) {
              $slug = Str::slug($validated['title']);

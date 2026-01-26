@@ -26,10 +26,15 @@ class CourseController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'image' => 'nullable|string',
-            'category' => 'required|string',
-            'duration' => 'nullable|string',
+            'category' => 'required|string|max:255',
+            'duration' => 'nullable|string|max:255',
             'curriculum' => 'nullable|array',
         ]);
+
+        // Ensure curriculum is an array
+        if (isset($validated['curriculum']) && !is_array($validated['curriculum'])) {
+            $validated['curriculum'] = [];
+        }
 
         $slug = Str::slug($validated['title']);
         $count = Course::where('slug', $slug)->count();
@@ -50,10 +55,15 @@ class CourseController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
             'image' => 'nullable|string',
-            'category' => 'sometimes|required|string',
-            'duration' => 'nullable|string',
+            'category' => 'sometimes|required|string|max:255',
+            'duration' => 'nullable|string|max:255',
             'curriculum' => 'nullable|array',
         ]);
+
+        // Ensure curriculum is an array
+        if (isset($validated['curriculum']) && !is_array($validated['curriculum'])) {
+            $validated['curriculum'] = [];
+        }
 
         if (isset($validated['title'])) {
             $slug = Str::slug($validated['title']);
