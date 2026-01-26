@@ -14,6 +14,12 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Image upload endpoint (protected)
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::post('/upload-image', [\App\Http\Controllers\ImageUploadController::class, 'upload']);
+    Route::delete('/delete-image', [\App\Http\Controllers\ImageUploadController::class, 'delete']);
+});
+
 // Public routes
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{id}', [BlogController::class, 'show']);

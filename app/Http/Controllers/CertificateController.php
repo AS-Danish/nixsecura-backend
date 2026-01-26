@@ -39,7 +39,7 @@ class CertificateController extends Controller
                 'title' => 'required|string|max:255',
                 'issuer' => 'required|string|max:255',
                 'year' => 'required|string|max:10',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'description' => 'nullable|string',
                 'certificate_number' => 'nullable|string|max:255',
                 'issue_date' => 'nullable|date',
@@ -94,7 +94,7 @@ class CertificateController extends Controller
                 'title' => 'sometimes|required|string|max:255',
                 'issuer' => 'sometimes|required|string|max:255',
                 'year' => 'sometimes|required|string|max:10',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'description' => 'nullable|string',
                 'certificate_number' => 'nullable|string|max:255',
                 'issue_date' => 'nullable|date',

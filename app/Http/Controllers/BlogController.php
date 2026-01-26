@@ -33,16 +33,28 @@ class BlogController extends Controller
                 'title' => 'required|string|max:255',
                 'excerpt' => 'required|string',
                 'content' => 'required|string',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Now stores URL path, not base64
                 'category' => 'required|string|max:255',
                 'published_at' => 'nullable|date',
                 'tags' => 'nullable|array',
             ]);
 
-            // Sanitize inputs
+            // Sanitize inputs (but preserve HTML in content for rich text editor)
             $validated['title'] = strip_tags(trim($validated['title']));
             $validated['excerpt'] = strip_tags(trim($validated['excerpt']));
             $validated['category'] = strip_tags(trim($validated['category']));
+            // Content should preserve HTML from rich text editor, just trim whitespace
+            if (isset($validated['content'])) {
+                $validated['content'] = trim($validated['content']);
+                // Check if content is empty (just HTML tags with no text)
+                $textContent = strip_tags($validated['content']);
+                if (trim($textContent) === '') {
+                    return response()->json([
+                        'message' => 'Validation failed',
+                        'errors' => ['content' => ['Content cannot be empty.']]
+                    ], 422);
+                }
+            }
 
             // Ensure tags is an array and sanitize
             if (isset($validated['tags']) && !is_array($validated['tags'])) {
@@ -61,7 +73,35 @@ class BlogController extends Controller
                 $slug = $slug . '-' . ($count + 1);
             }
 
-            $blog = Blog::create(array_merge($validated, ['slug' => $slug]));
+            // Dashboard doesn't provide author fields; set safe defaults
+            $user = $request->user();
+            $blogPayload = array_merge($validated, [
+                'slug' => $slug,
+                'author_name' => $user && $user->name ? $user->name : 'Admin',
+                'author_role' => $user ? 'Administrator' : 'Admin',
+                'author_image' => null,
+            ]);
+
+            // Optional: simple read_time estimate (e.g. "5 min read")
+            $plainText = trim(preg_replace('/\s+/', ' ', strip_tags($validated['content'] ?? '')));
+            if ($plainText !== '') {
+                // Count words more reliably (handles unicode and special characters)
+                $words = count(preg_split('/\s+/u', $plainText, -1, PREG_SPLIT_NO_EMPTY));
+                $minutes = max(1, (int) ceil($words / 200));
+                $blogPayload['read_time'] = $minutes . ' min read';
+            } else {
+                $blogPayload['read_time'] = '1 min read';
+            }
+
+            // Ensure all required fields are present
+            if (empty($blogPayload['author_name'])) {
+                $blogPayload['author_name'] = 'Admin';
+            }
+            if (empty($blogPayload['author_role'])) {
+                $blogPayload['author_role'] = 'Admin';
+            }
+
+            $blog = Blog::create($blogPayload);
 
             return response()->json($blog, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -71,7 +111,11 @@ class BlogController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Blog store error: ' . $e->getMessage());
-            return response()->json(['message' => 'An error occurred while creating blog'], 500);
+            Log::error('Blog store error trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'message' => 'An error occurred while creating blog',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
     }
 
@@ -104,13 +148,13 @@ class BlogController extends Controller
                 'title' => 'sometimes|required|string|max:255',
                 'excerpt' => 'sometimes|required|string',
                 'content' => 'sometimes|required|string',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Now stores URL path, not base64
                 'category' => 'sometimes|required|string|max:255',
                 'published_at' => 'nullable|date',
                 'tags' => 'nullable|array',
             ]);
 
-            // Sanitize inputs
+            // Sanitize inputs (but preserve HTML in content for rich text editor)
             if (isset($validated['title'])) {
                 $validated['title'] = strip_tags(trim($validated['title']));
             }
@@ -119,6 +163,18 @@ class BlogController extends Controller
             }
             if (isset($validated['category'])) {
                 $validated['category'] = strip_tags(trim($validated['category']));
+            }
+            // Content should preserve HTML from rich text editor, just trim whitespace
+            if (isset($validated['content'])) {
+                $validated['content'] = trim($validated['content']);
+                // Check if content is empty (just HTML tags with no text)
+                $textContent = strip_tags($validated['content']);
+                if (trim($textContent) === '') {
+                    return response()->json([
+                        'message' => 'Validation failed',
+                        'errors' => ['content' => ['Content cannot be empty.']]
+                    ], 422);
+                }
             }
 
             // Ensure tags is an array and sanitize
@@ -141,6 +197,17 @@ class BlogController extends Controller
                      }
                      $validated['slug'] = $slug;
                  }
+            }
+
+            // Keep read_time roughly in sync if content changes
+            if (isset($validated['content'])) {
+                $plainText = trim(preg_replace('/\s+/', ' ', strip_tags($validated['content'])));
+                if ($plainText !== '') {
+                    // Count words more reliably (handles unicode and special characters)
+                    $words = count(preg_split('/\s+/u', $plainText, -1, PREG_SPLIT_NO_EMPTY));
+                    $minutes = max(1, (int) ceil($words / 200));
+                    $validated['read_time'] = $minutes . ' min read';
+                }
             }
 
             $blog->update($validated);

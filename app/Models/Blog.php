@@ -16,7 +16,11 @@ class Blog extends Model
         'content',
         'image',
         'category',
+        'read_time',
         'published_at',
+        'author_name',
+        'author_image',
+        'author_role',
         'tags',
     ];
 

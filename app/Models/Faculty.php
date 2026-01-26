@@ -9,6 +9,9 @@ class Faculty extends Model
 {
     use HasFactory;
 
+    // Migration creates singular table name `faculty`
+    protected $table = 'faculty';
+
     protected $fillable = [
         'name',
         'specialization',

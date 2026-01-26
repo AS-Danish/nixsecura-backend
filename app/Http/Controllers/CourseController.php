@@ -39,7 +39,7 @@ class CourseController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'required|string',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'category' => 'required|string|max:255',
                 'duration' => 'nullable|string|max:255',
                 'curriculum' => 'nullable|array',
@@ -91,7 +91,7 @@ class CourseController extends Controller
             $validated = $request->validate([
                 'title' => 'sometimes|required|string|max:255',
                 'description' => 'sometimes|required|string',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'category' => 'sometimes|required|string|max:255',
                 'duration' => 'nullable|string|max:255',
                 'curriculum' => 'nullable|array',

@@ -39,7 +39,7 @@ class WorkshopController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'date' => 'required|date',
                 'start_time' => 'nullable|string|max:50',
                 'end_time' => 'nullable|string|max:50',
@@ -104,7 +104,7 @@ class WorkshopController extends Controller
             $validated = $request->validate([
                 'title' => 'sometimes|required|string|max:255',
                 'description' => 'nullable|string',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'date' => 'sometimes|required|date',
                 'start_time' => 'nullable|string|max:50',
                 'end_time' => 'nullable|string|max:50',

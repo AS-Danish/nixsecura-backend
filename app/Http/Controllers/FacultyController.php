@@ -43,7 +43,7 @@ class FacultyController extends Controller
                 'specialization' => 'required|string|max:255',
                 'bio' => 'nullable|string',
                 'experience' => 'nullable|string|max:255',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'email' => 'nullable|email|max:255',
                 'phone' => 'nullable|string|max:255',
                 'qualifications' => 'nullable|array',
@@ -126,7 +126,7 @@ class FacultyController extends Controller
                 'specialization' => 'sometimes|required|string|max:255',
                 'bio' => 'nullable|string',
                 'experience' => 'nullable|string|max:255',
-                'image' => 'nullable|string|max:5000',
+                'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'email' => 'nullable|email|max:255',
                 'phone' => 'nullable|string|max:255',
                 'qualifications' => 'nullable|array',
