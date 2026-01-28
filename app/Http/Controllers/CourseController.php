@@ -56,11 +56,12 @@ class CourseController extends Controller
             if (isset($validated['curriculum']) && !is_array($validated['curriculum'])) {
                 $validated['curriculum'] = [];
             } else if (isset($validated['curriculum'])) {
-                $validated['curriculum'] = array_map(function($item) {
-                    return strip_tags(trim($item));
+                $validated['curriculum'] = array_values(array_map(function($item) {
+                    return is_string($item) ? strip_tags(trim($item)) : $item;
                 }, array_filter($validated['curriculum'], function($item) {
-                    return !empty(trim($item));
-                }));
+                    if (is_array($item)) return !empty($item);
+                    return is_string($item) && !empty(trim($item));
+                })));
             }
 
             $slug = Str::slug($validated['title']);
@@ -112,11 +113,12 @@ class CourseController extends Controller
             if (isset($validated['curriculum']) && !is_array($validated['curriculum'])) {
                 $validated['curriculum'] = [];
             } else if (isset($validated['curriculum'])) {
-                $validated['curriculum'] = array_map(function($item) {
-                    return strip_tags(trim($item));
+                $validated['curriculum'] = array_values(array_map(function($item) {
+                    return is_string($item) ? strip_tags(trim($item)) : $item;
                 }, array_filter($validated['curriculum'], function($item) {
-                    return !empty(trim($item));
-                }));
+                    if (is_array($item)) return !empty($item);
+                    return is_string($item) && !empty(trim($item));
+                })));
             }
 
             if (isset($validated['title'])) {
