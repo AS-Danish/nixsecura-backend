@@ -6,6 +6,7 @@ use App\Models\Workshop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class WorkshopController extends Controller
 {
@@ -13,6 +14,9 @@ class WorkshopController extends Controller
     {
         try {
             $workshops = Workshop::latest()->get();
+            foreach ($workshops as $workshop) {
+                $this->refreshStatus($workshop);
+            }
             return response()->json($workshops->toArray());
         } catch (\Exception $e) {
             Log::error('Workshop index error: ' . $e->getMessage());
@@ -24,6 +28,7 @@ class WorkshopController extends Controller
     {
         try {
             $workshop = Workshop::where('id', $id)->orWhere('slug', $id)->firstOrFail();
+            $this->refreshStatus($workshop);
             return response()->json($workshop);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['message' => 'Workshop not found'], 404);
@@ -177,6 +182,55 @@ class WorkshopController extends Controller
         } catch (\Exception $e) {
             Log::error('Workshop destroy error: ' . $e->getMessage());
             return response()->json(['message' => 'An error occurred while deleting workshop'], 500);
+        }
+    }
+
+    private function refreshStatus(Workshop $workshop): void
+    {
+        try {
+            if ($workshop->status === 'cancelled') {
+                return;
+            }
+
+            $now = Carbon::now();
+            $todayStart = $now->copy()->startOfDay();
+            $workshopDate = $workshop->date instanceof Carbon
+                ? $workshop->date->copy()->startOfDay()
+                : Carbon::parse($workshop->date)->startOfDay();
+
+            $newStatus = $workshop->status;
+
+            if ($workshopDate->lt($todayStart)) {
+                $newStatus = 'completed';
+            } elseif ($workshopDate->isSameDay($todayStart)) {
+                $start = null;
+                $end = null;
+                if (!empty($workshop->start_time)) {
+                    $start = Carbon::parse($workshopDate->toDateString() . ' ' . $workshop->start_time);
+                }
+                if (!empty($workshop->end_time)) {
+                    $end = Carbon::parse($workshopDate->toDateString() . ' ' . $workshop->end_time);
+                }
+
+                if ($end && $now->greaterThanOrEqualTo($end)) {
+                    $newStatus = 'completed';
+                } elseif ($start && $end && $now->betweenIncluded($start, $end)) {
+                    $newStatus = 'open';
+                } elseif ($start && $now->lessThan($start)) {
+                    $newStatus = 'upcoming';
+                } else {
+                    $newStatus = 'open';
+                }
+            } else {
+                $newStatus = 'upcoming';
+            }
+
+            if ($newStatus !== $workshop->status) {
+                $workshop->status = $newStatus;
+                $workshop->save();
+            }
+        } catch (\Exception $e) {
+            Log::warning('Workshop status refresh error: ' . $e->getMessage());
         }
     }
 }
