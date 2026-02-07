@@ -9,14 +9,33 @@ use Illuminate\Support\Facades\Log;
 
 class CourseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $courses = Course::latest()->get();
-            return response()->json($courses->toArray());
+            $query = Course::query();
+
+            // Search functionality
+            if ($request->filled('search')) {
+                $search = $request->input('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            // Category filtering
+            if ($request->filled('category') && $request->input('category') !== 'All') {
+                $query->where('category', $request->input('category'));
+            }
+
+            // Pagination (9 items per page to fit 3x3 grid)
+            $courses = $query->latest()->paginate(9);
+            
+            return response()->json($courses);
         } catch (\Exception $e) {
             Log::error('Course index error: ' . $e->getMessage());
-            return response()->json([], 200);
+            // Return structure matching pagination even on error
+            return response()->json(['data' => [], 'meta' => []], 200);
         }
     }
 
