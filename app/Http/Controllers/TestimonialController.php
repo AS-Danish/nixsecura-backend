@@ -8,10 +8,20 @@ use Illuminate\Support\Facades\Log;
 
 class TestimonialController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $testimonials = Testimonial::latest()->get();
+            $query = Testimonial::latest();
+
+            if ($request->has('featured') && $request->boolean('featured')) {
+                $query->where('is_featured', true);
+            }
+
+            if ($request->has('limit')) {
+                $query->limit($request->input('limit'));
+            }
+
+            $testimonials = $query->get();
             return response()->json($testimonials->toArray());
         } catch (\Exception $e) {
             Log::error('Testimonial index error: ' . $e->getMessage());

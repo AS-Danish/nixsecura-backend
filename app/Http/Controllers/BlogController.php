@@ -12,10 +12,22 @@ class BlogController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
     {
         try {
-            $blogs = Blog::latest()->get();
+            $query = Blog::latest();
+            
+            // Limit fields to reduce payload size (exclude full content)
+            $query->select('id', 'title', 'slug', 'excerpt', 'image', 'category', 'published_at', 'author_name', 'author_image', 'created_at', 'read_time');
+
+            if ($request->has('limit')) {
+                $query->limit($request->input('limit'));
+            }
+
+            $blogs = $query->get();
             return response()->json($blogs->toArray());
         } catch (\Exception $e) {
             Log::error('Blog index error: ' . $e->getMessage());

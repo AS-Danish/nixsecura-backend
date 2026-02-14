@@ -28,8 +28,9 @@ class CourseController extends Controller
                 $query->where('category', $request->input('category'));
             }
 
-            // Pagination (9 items per page to fit 3x3 grid)
-            $courses = $query->latest()->paginate(9);
+            // Pagination (default 9 items per page, customizable via per_page)
+            $perPage = $request->input('per_page', 9);
+            $courses = $query->latest()->paginate($perPage);
             
             return response()->json($courses);
         } catch (\Exception $e) {
