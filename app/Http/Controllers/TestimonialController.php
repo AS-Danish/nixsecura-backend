@@ -39,7 +39,7 @@ class TestimonialController extends Controller
                 'name' => 'required|string|max:255',
                 'course' => 'nullable|string|max:255',
                 'testimonial' => 'nullable|string',
-                'rating' => 'required|integer|min:1|max:5',
+                'rating' => 'nullable|integer|min:1|max:5',
                 'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'position' => 'nullable|string|max:255',
                 'company' => 'nullable|string|max:255',
@@ -91,7 +91,7 @@ class TestimonialController extends Controller
                 'name' => 'sometimes|required|string|max:255',
                 'course' => 'nullable|string|max:255',
                 'testimonial' => 'nullable|string',
-                'rating' => 'sometimes|required|integer|min:1|max:5',
+                'rating' => 'nullable|integer|min:1|max:5',
                 'image' => 'nullable|string|max:500', // Stores URL path, not base64
                 'position' => 'nullable|string|max:255',
                 'company' => 'nullable|string|max:255',
