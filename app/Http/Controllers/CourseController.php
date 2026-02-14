@@ -181,4 +181,15 @@ class CourseController extends Controller
             return response()->json(['message' => 'An error occurred while deleting course'], 500);
         }
     }
+
+    public function list()
+    {
+        try {
+            $courses = Course::select('id', 'title', 'duration')->get();
+            return response()->json($courses);
+        } catch (\Exception $e) {
+            Log::error('Course list error: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while fetching course list'], 500);
+        }
+    }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 });
 
 // Public routes
+Route::get('/courses/list', [CourseController::class, 'list']); // List for dropdowns
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{id}', [BlogController::class, 'show']);
 Route::get('/courses', [CourseController::class, 'index']);
@@ -38,6 +40,9 @@ Route::get('/gallery/{id}', [GalleryController::class, 'show']);
 
 // Protected admin routes
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Dashboard Stats
+    Route::get('/admin/stats', [DashboardController::class, 'stats']);
+
     // Blogs
     Route::post('/blogs', [BlogController::class, 'store']);
     Route::put('/blogs/{id}', [BlogController::class, 'update']);
