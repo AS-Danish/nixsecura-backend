@@ -6,6 +6,7 @@ use App\Models\Workshop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class WorkshopController extends Controller
@@ -13,7 +14,7 @@ class WorkshopController extends Controller
     public function index()
     {
         try {
-            $workshops = Workshop::latest()->get();
+            $workshops = Workshop::with('images')->latest()->get();
             foreach ($workshops as $workshop) {
                 $this->refreshStatus($workshop);
             }
@@ -27,7 +28,7 @@ class WorkshopController extends Controller
     public function show($id)
     {
         try {
-            $workshop = Workshop::where('id', $id)->orWhere('slug', $id)->firstOrFail();
+            $workshop = Workshop::with('images')->where('id', $id)->orWhere('slug', $id)->firstOrFail();
             $this->refreshStatus($workshop);
             return response()->json($workshop);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -44,7 +45,8 @@ class WorkshopController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'image' => 'nullable|string|max:500', // Stores URL path, not base64
+                'images' => 'nullable|array|min:1|max:10',
+                'images.*' => 'string|max:500', // Validate each image URL
                 'date' => 'required|date',
                 'start_time' => 'nullable|string|max:50',
                 'end_time' => 'nullable|string|max:50',
@@ -87,9 +89,19 @@ class WorkshopController extends Controller
                 $slug = $slug . '-' . ($count + 1);
             }
 
-            $workshop = Workshop::create(array_merge($validated, ['slug' => $slug]));
+            $workshop = DB::transaction(function () use ($validated, $slug) {
+                $workshop = Workshop::create(array_merge($validated, ['slug' => $slug]));
 
-            return response()->json($workshop, 201);
+                if (isset($validated['images']) && is_array($validated['images'])) {
+                    foreach ($validated['images'] as $imagePath) {
+                        $workshop->images()->create(['image_path' => $imagePath]);
+                    }
+                }
+
+                return $workshop;
+            });
+
+            return response()->json($workshop->load('images'), 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
@@ -109,7 +121,8 @@ class WorkshopController extends Controller
             $validated = $request->validate([
                 'title' => 'sometimes|required|string|max:255',
                 'description' => 'nullable|string',
-                'image' => 'nullable|string|max:500', // Stores URL path, not base64
+                'images' => 'nullable|array|min:1|max:10',
+                'images.*' => 'string|max:500',
                 'date' => 'sometimes|required|date',
                 'start_time' => 'nullable|string|max:50',
                 'end_time' => 'nullable|string|max:50',
@@ -154,9 +167,22 @@ class WorkshopController extends Controller
                 }
             }
 
-            $workshop->update($validated);
+            $workshop = DB::transaction(function () use ($workshop, $validated) {
+                $workshop->update($validated);
 
-            return response()->json($workshop);
+                if (isset($validated['images']) && is_array($validated['images'])) {
+                    // Sync images: delete existing and create new ones
+                    // This is simple but effective. For optimization, we could diff.
+                    $workshop->images()->delete();
+                    foreach ($validated['images'] as $imagePath) {
+                        $workshop->images()->create(['image_path' => $imagePath]);
+                    }
+                }
+
+                return $workshop;
+            });
+
+            return response()->json($workshop->load('images'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['message' => 'Workshop not found'], 404);
         } catch (\Illuminate\Validation\ValidationException $e) {

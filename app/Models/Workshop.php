@@ -13,7 +13,7 @@ class Workshop extends Model
         'title',
         'slug',
         'description',
-        'image',
+        // 'image', // Removed as we use workshop_images table now
         'date',
         'start_time',
         'end_time',
@@ -32,4 +32,17 @@ class Workshop extends Model
         'max_participants' => 'integer',
         'registrations' => 'integer',
     ];
+
+    protected $with = ['images']; // Eager load images by default
+
+    public function images()
+    {
+        return $this->hasMany(WorkshopImage::class);
+    }
+
+    // Accessor for backward compatibility
+    public function getImageAttribute()
+    {
+        return $this->images->first()?->image_path;
+    }
 }
